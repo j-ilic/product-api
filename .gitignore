@@ -1,0 +1,76 @@
+# Ignore Hg backup files
+syntax: glob
+*.orig
+*.rej
+
+# Ignore Office backup files
+~$*
+
+# Ignore Visual Studio files
+UpgradeLog*.htm
+
+*.sublime-workspace
+syntax: glob
+*.obj
+*.exe
+*.dll
+*.pdb
+*.user
+*.aps
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*.ncb
+*.suo
+*.tlb
+*.tlh
+*.bak
+*.cache
+*.ilk
+*.log
+*.lib
+*.sbr
+*.scc
+[Bb]in
+[Dd]ebug*/
+[Oo]bj/
+[Rr]elease*/
+_ReSharper*/
+*.ReSharper
+[Tt]est[Rr]esult*
+[Bb]uild[Ll]og.*
+*.[Pp]ublish.xml
+[Tt]humbs.db
+
+# NuGet Packages Directory
+packages
+
+# Logs
+
+# Generated items
+
+.vs/
+*.nuget
+*.nupkg
+
+# Node Modules
+node_modules/
+
+
+.DS_Store
+dist
+.vscode
+
+/tests/e2e/videos/
+/tests/e2e/screenshots/
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
