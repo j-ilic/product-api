@@ -1,6 +1,8 @@
 ﻿using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Products.Application.Common.Interfaces;
+using Products.Domain.Entities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -52,10 +54,38 @@ namespace Products.Application.Inventories.Commands
 
         public async Task<string> Handle(CreateInventoryCommand command, CancellationToken cancellationToken)
         {
+            bool inventoryExists = await _context.Inventories.AnyAsync(t => t.InventoryId == command.InventoryId, cancellationToken);
+
+            if (inventoryExists)
+            {
+                throw new InvalidOperationException("Inventory with given parameters already exists");
+            }
+
+            Inventory newInventory = new Inventory
+            {
+                InventoryId = command.InventoryId,
+                InventoryLocation = command.InventoryLocation,
+                InventoryDate = command.InventoryDate.Date
+            };
+
             foreach (var tag in command.Tags)
             {
                 var sgtin96Data = Sgtin96Decoder.DecodeFromSgtin96HexString(tag);
+                newInventory.InventoryItems.Add(new InventoryItem
+                {
+                    CompanyPrefix = sgtin96Data.CompanyPrefix,
+                    Filter = sgtin96Data.Filter,
+                    HexTag = tag,
+                    ItemReference = sgtin96Data.ItemReference,
+                    SerialNumber = sgtin96Data.SerialNumber,
+                    TagUri = sgtin96Data.TagUri
+                });
             }
+
+            _context.Inventories.Add(newInventory);
+
+            await _context.SaveChangesAsync(cancellationToken);
+
             return await Task.FromResult(command.InventoryId);
         }
     }
