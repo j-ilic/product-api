@@ -11,9 +11,9 @@ namespace Products.Application.Products.Queries
 {
     public class ProductQueryResponse
     {
-        public long CompanyPrefix { get; set; }
+        public string CompanyPrefix { get; set; }
         public string CompanyName { get; set; }
-        public long ItemReference { get; set; }
+        public string ItemReference { get; set; }
         public string ProductName { get; set; }
     }
 
@@ -40,9 +40,9 @@ namespace Products.Application.Products.Queries
         {
             return await Task.FromResult(new ProductQueryResponse
             {
-                CompanyPrefix = 3319361,
+                CompanyPrefix = "3319361",
                 CompanyName = "Sanford LLC",
-                ItemReference = 407205,
+                ItemReference = "407205",
                 ProductName = "Beans - Kidney, Red Dry"
             });
         }

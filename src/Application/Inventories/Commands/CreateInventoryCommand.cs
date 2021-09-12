@@ -2,6 +2,7 @@
 using MediatR;
 using Products.Application.Common.Interfaces;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -51,6 +52,10 @@ namespace Products.Application.Inventories.Commands
 
         public async Task<string> Handle(CreateInventoryCommand command, CancellationToken cancellationToken)
         {
+            foreach (var tag in command.Tags)
+            {
+                var sgtin96Data = Sgtin96Decoder.DecodeFromSgtin96HexString(tag);
+            }
             return await Task.FromResult(command.InventoryId);
         }
     }
