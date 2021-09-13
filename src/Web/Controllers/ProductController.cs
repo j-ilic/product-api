@@ -24,6 +24,26 @@ namespace Products.Web.Controllers
             _mediator = mediator;
         }
 
+        /// <summary>
+        /// Creates a new product definition
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST /api/product
+        ///     {
+        ///        "companyPrefix": "086906",
+        ///        "companyName": "Blanda-Hagenes",
+        ///        "itemReference": "1437603",
+        ///        "productName": "Pasta - Penne, Rigate, Dry"
+        ///     }
+        ///
+        /// </remarks>
+        /// <param name="command"></param>
+        /// <returns>A newly created product definition</returns>
+        /// <response code="201">Returns the newly created product definition</response>
+        /// <response code="400">If the command is not valid</response>  
+        /// <response code="500">If unexpected error occurs</response> 
         [HttpPost]
         [ProducesResponseType(typeof(long), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]

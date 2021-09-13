@@ -42,5 +42,17 @@ namespace Products.Web.Controllers
         {
             return Ok(await _mediator.Send(new InventoryQuery(id)));
         }
+
+        [HttpGet("inventoried-items/per-company/{companyPrefix}")]
+        public async Task<IActionResult> GetInventoriedItemsCountPerCompany(string companyPrefix)
+        {
+            return Ok(await _mediator.Send(new InventoriedItemsCountPerCompanyQuery(companyPrefix)));
+        }
+
+        [HttpGet("inventoried-items/per-product-per-day/{companyPrefix}/{itemReference}")]
+        public async Task<IActionResult> GetInventoriedItemsCountForProductPerDay(string companyPrefix, string itemReference)
+        {
+            return Ok(await _mediator.Send(new InventoriedItemsCountPerProductPerDayQuery(companyPrefix, itemReference)));
+        }
     }
 }
