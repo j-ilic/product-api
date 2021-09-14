@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Products.Application.Common.Exceptions;
 using Products.Application.Common.Interfaces;
 using Products.Domain.Entities;
 using System;
@@ -58,7 +59,7 @@ namespace Products.Application.Inventories.Commands
 
             if (inventoryExists)
             {
-                throw new InvalidOperationException("Inventory with given parameters already exists");
+                throw new EntityExistsException($"Inventory with Id '{command.InventoryId}' already exists");
             }
 
             Inventory newInventory = new Inventory
@@ -86,7 +87,7 @@ namespace Products.Application.Inventories.Commands
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            return await Task.FromResult(command.InventoryId);
+            return newInventory.InventoryId;
         }
     }
 }

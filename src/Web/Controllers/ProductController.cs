@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Products.Web.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/product")]
     public class ProductController : ControllerBase
     {
         private readonly ILogger<ProductController> _logger;
@@ -42,25 +42,41 @@ namespace Products.Web.Controllers
         /// <param name="command"></param>
         /// <returns>A newly created product definition</returns>
         /// <response code="201">Returns the newly created product definition</response>
-        /// <response code="400">If the command is not valid</response>  
+        /// <response code="400">If the command is not valid or product with same definition already exists</response>  
         /// <response code="500">If unexpected error occurs</response> 
         [HttpPost]
-        [ProducesResponseType(typeof(long), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(CreateProductCommandResponse), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Create(CreateProductCommand command)
         {
             var res = await _mediator.Send(command);
 
-            return CreatedAtAction(nameof(Get), new { Id = res }, res);
+            return CreatedAtAction(nameof(Get), new { res.CompanyPrefix, res.ItemReference }, res);
         }
 
-        [HttpGet("{id}")]
+        /// <summary>
+        /// Returns a specified product definition
+        /// </summary>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     GET /api/product/086906/1437603
+        ///
+        /// </remarks>
+        /// <param name="companyPrefix"></param>
+        /// <param name="itemReference"></param>
+        /// <returns>A specified product definition</returns>
+        /// <response code="200">Returns the specified product definition</response>
+        /// <response code="404">If the specified product definition is not found</response>  
+        /// <response code="500">If unexpected error occurs</response> 
+        [HttpGet("{companyPrefix}/{itemReference}")]
         [ProducesResponseType(typeof(ProductQueryResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Get(long id)
+        public async Task<IActionResult> Get(string companyPrefix, string itemReference)
         {
-            return Ok(await _mediator.Send(new ProductQuery(id)));
+            return Ok(await _mediator.Send(new ProductQuery(companyPrefix, itemReference)));
         }
     }
 }

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Products.Application.Common.Exceptions;
 using Products.Application.Common.Interfaces;
+using Products.Application.Specifications;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,17 +19,21 @@ namespace Products.Application.Inventories.Queries
         public long InventoriedItemsCount { get; set; }
     }
 
-    public class InventoriedItemsCountPerCompanyQuery : IRequest<InventoriedItemsCountPerCompanyQueryResponse>
+    public class InventoriedItemsCountPerCompanyQuery : IRequest<IPageableCollection<InventoriedItemsCountPerCompanyQueryResponse>>
     {
-        public InventoriedItemsCountPerCompanyQuery(string companyPrefix)
+        public InventoriedItemsCountPerCompanyQuery(InventoriedItemsSpecification specification, int skip = 0, int take = 25)
         {
-            CompanyPrefix = companyPrefix;
+            Specification = specification;
+            Skip = skip;
+            Take = take;
         }
 
-        public string CompanyPrefix { get; }
+        public InventoriedItemsSpecification Specification { get; }
+        public int Skip { get; }
+        public int Take { get; }
     }
 
-    public class InventoriedItemsCountPerCompanyQueryHandler : IRequestHandler<InventoriedItemsCountPerCompanyQuery, InventoriedItemsCountPerCompanyQueryResponse>
+    public class InventoriedItemsCountPerCompanyQueryHandler : IRequestHandler<InventoriedItemsCountPerCompanyQuery, IPageableCollection<InventoriedItemsCountPerCompanyQueryResponse>>
     {
         private readonly IApplicationDbContext _context;
 
@@ -37,35 +42,32 @@ namespace Products.Application.Inventories.Queries
             _context = context;
         }
 
-        public async Task<InventoriedItemsCountPerCompanyQueryResponse> Handle(InventoriedItemsCountPerCompanyQuery query, CancellationToken cancellationToken)
+        public async Task<IPageableCollection<InventoriedItemsCountPerCompanyQueryResponse>> Handle(InventoriedItemsCountPerCompanyQuery query, CancellationToken cancellationToken)
         {
-            var res = await _context.InventoryItems
-                .Join(
-                    _context.Products,
-                    inventoryItem => new { inventoryItem.CompanyPrefix, inventoryItem.ItemReference },
-                    product => new { product.CompanyPrefix, product.ItemReference },
-                    (inventoryItem, product) => new
-                    {
-                        product.CompanyPrefix,
-                        product.CompanyName,
-                        InventoryItem = inventoryItem
-                    }
-                )
-                .GroupBy(i => new { i.CompanyPrefix, i.CompanyName }, (key, g) => new InventoriedItemsCountPerCompanyQueryResponse
+            var inventoriedItems = await _context.InventoryItems
+                .Where(query.Specification.Predicate)
+                .GroupBy(i => new { i.CompanyPrefix, i.Product.CompanyName }, (key, g) => new InventoriedItemsCountPerCompanyQueryResponse
                 {
                     CompanyPrefix = key.CompanyPrefix,
                     CompanyName = key.CompanyName,
                     InventoriedItemsCount = g.LongCount()
                 })
-                .Where(t => t.CompanyPrefix == query.CompanyPrefix)
-                .FirstOrDefaultAsync(cancellationToken);
+                .Skip(query.Skip)
+                .Take(query.Take)
+                .ToListAsync(cancellationToken);
 
-            if (res == null)
-            {
-                throw new NotFoundException($"Company with Company Prefix '{query.CompanyPrefix}' not found");
-            }
+            var total = await _context.InventoryItems
+                .Where(query.Specification.Predicate)
+                .GroupBy(i => new { i.CompanyPrefix, i.Product.CompanyName }, (key, g) => new InventoriedItemsCountPerCompanyQueryResponse
+                {
+                    CompanyPrefix = key.CompanyPrefix,
+                    CompanyName = key.CompanyName,
+                    InventoriedItemsCount = g.LongCount()
+                })
+                .LongCountAsync(cancellationToken);
 
-            return res;
+
+            return new PageableCollection<InventoriedItemsCountPerCompanyQueryResponse>(inventoriedItems, total);
         }
     }
 }

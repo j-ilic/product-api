@@ -1,5 +1,12 @@
-﻿using MediatR;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Products.Application.Common.Exceptions;
 using Products.Application.Common.Interfaces;
+using Products.Application.Common.Mappings;
+using Products.Application.Inventories.Models;
+using Products.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,17 +16,23 @@ using System.Threading.Tasks;
 
 namespace Products.Application.Inventories.Queries
 {
-    public class InventoryQueryResponse
+    public class InventoryQueryResponse : IMapFrom<Inventory>
     {
         public InventoryQueryResponse()
         {
-            Tags = new List<string>();
+            InventoriedItems = new List<InventoriedItemModel>();
         }
 
         public string InventoryId { get; set; }
         public string InventoryLocation { get; set; }
         public DateTime InventoryDate { get; set; }
-        public IEnumerable<string> Tags { get; set; }
+        public IEnumerable<InventoriedItemModel> InventoriedItems { get; set; }
+
+        public void Mapping(Profile profile)
+        {
+            profile.CreateMap<Inventory, InventoryQueryResponse>()
+                .ForMember(d => d.InventoriedItems, o => o.MapFrom(s => s.InventoryItems));
+        }
     }
 
     public class InventoryQuery : IRequest<InventoryQueryResponse>
@@ -35,25 +48,27 @@ namespace Products.Application.Inventories.Queries
     public class InventoryQueryHandler : IRequestHandler<InventoryQuery, InventoryQueryResponse>
     {
         private readonly IApplicationDbContext _context;
+        private readonly IMapper _mapper;
 
-        public InventoryQueryHandler(IApplicationDbContext context)
+        public InventoryQueryHandler(IApplicationDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
-        public async Task<InventoryQueryResponse> Handle(InventoryQuery request, CancellationToken cancellationToken)
+        public async Task<InventoryQueryResponse> Handle(InventoryQuery query, CancellationToken cancellationToken)
         {
-            return await Task.FromResult(new InventoryQueryResponse
+            var inventory = await _context.Inventories
+                .Where(t => t.InventoryId == query.Id)
+                .ProjectTo<InventoryQueryResponse>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (inventory == null)
             {
-                InventoryId = "AJSK3737435849KJJS",
-                InventoryLocation = "Zagreb",
-                InventoryDate = DateTime.Now,
-                Tags = new List<string>
-                {
-                    "3098D0A357783C0034E9DF74",
-                    "3019B9368A10A6C022E76FF5"
-                }
-            });
+                throw new NotFoundException($"Inventory with Id '{query.Id}' not found");
+            }
+
+            return inventory;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Products.Application.Common.Exceptions;
 using Products.Application.Common.Interfaces;
 using Products.Domain.Entities;
 using System;
@@ -12,7 +13,13 @@ using System.Threading.Tasks;
 
 namespace Products.Application.Products.Commands
 {
-    public class CreateProductCommand : IRequest<long>
+    public class CreateProductCommandResponse
+    {
+        public string CompanyPrefix { get; set; }
+        public string ItemReference { get; set; }
+    }
+
+    public class CreateProductCommand : IRequest<CreateProductCommandResponse>
     {
         public string CompanyPrefix { get; set; }
         public string CompanyName { get; set; }
@@ -39,7 +46,7 @@ namespace Products.Application.Products.Commands
         }
     }
 
-    public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, long>
+    public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, CreateProductCommandResponse>
     {
         private readonly IApplicationDbContext _context;
 
@@ -48,12 +55,12 @@ namespace Products.Application.Products.Commands
             _context = context;
         }
 
-        public async Task<long> Handle(CreateProductCommand command, CancellationToken cancellationToken)
+        public async Task<CreateProductCommandResponse> Handle(CreateProductCommand command, CancellationToken cancellationToken)
         {
             bool productExists = await _context.Products.AnyAsync(t => t.CompanyPrefix == command.CompanyPrefix && t.ItemReference == command.ItemReference, cancellationToken);
             if (productExists)
             {
-                throw new InvalidOperationException("Product with given parameters already exists");
+                throw new EntityExistsException($"Product with Company Prefix '{command.CompanyPrefix}' and Item Reference '{command.ItemReference}' already exists");
             }
 
             Product newProduct = new Product
@@ -68,7 +75,11 @@ namespace Products.Application.Products.Commands
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            return await Task.FromResult(1);
+            return new CreateProductCommandResponse
+            {
+                CompanyPrefix = newProduct.CompanyPrefix,
+                ItemReference = newProduct.ItemReference
+            };
         }
     }
 }
