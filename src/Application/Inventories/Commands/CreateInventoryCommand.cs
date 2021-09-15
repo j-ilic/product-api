@@ -40,7 +40,9 @@ namespace Products.Application.Inventories.Commands
             RuleFor(t => t.Tags).NotEmpty();
             RuleForEach(t => t.Tags)
                 .Must(t => t.IsValidSgtin96Format())
-                    .WithMessage($"Tag must be in valid SGTIN-96 format which means hexadecimal characters only and strings with length {StringExtensions.TheLengthOfSgtin96String}");
+                    .WithMessage($"Tag must be in valid SGTIN-96 format which means hexadecimal characters only and strings with length {StringExtensions.TheLengthOfSgtin96String}")
+                .Must((command, tag) => command.Tags.Count(t => t == tag) == 1)
+                    .WithMessage((command, tag) => $"Duplicate tags not allowed. Found duplicate tag '{tag}'");
         }
     }
 
